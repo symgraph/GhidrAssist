@@ -1,5 +1,6 @@
 package ghidrassist.mcp2.protocol;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import ghidrassist.mcp2.prompts.MCPPrompt;
 import ghidrassist.mcp2.prompts.MCPPromptArgument;
 import ghidrassist.mcp2.resources.MCPResource;
@@ -16,9 +17,15 @@ import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
+import io.modelcontextprotocol.client.transport.ServerParameters;
+import io.modelcontextprotocol.client.transport.StdioClientTransport;
+import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.spec.McpClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
 
+import java.io.File;
+import java.lang.reflect.Method;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -119,19 +126,66 @@ public class MCPClientAdapter {
      * Create transport based on server configuration type.
      */
     private McpClientTransport createTransport() {
-        String baseUrl = config.getBaseUrl();
-
         switch (config.getTransport()) {
             case STREAMABLE_HTTP:
+                String baseUrl = config.getBaseUrl();
                 // Streamable HTTP uses /mcp endpoint
                 String mcpUrl = baseUrl.endsWith("/") ? baseUrl + "mcp" : baseUrl + "/mcp";
                 Msg.debug(this, "Creating Streamable HTTP transport for: " + mcpUrl);
                 return HttpClientStreamableHttpTransport.builder(mcpUrl).build();
+            case STDIO:
+                Msg.debug(this, "Creating stdio transport for command: " + config.getCommand());
+                return createStdioTransport();
             case SSE:
             default:
+                baseUrl = config.getBaseUrl();
                 // SSE uses base URL (endpoints at /sse and /message)
                 Msg.debug(this, "Creating SSE transport for: " + baseUrl);
                 return HttpClientSseClientTransport.builder(baseUrl).build();
+        }
+    }
+
+    private McpClientTransport createStdioTransport() {
+        var builder = ServerParameters.builder(config.getCommand());
+
+        List<String> args = config.getArgs();
+        if (!args.isEmpty()) {
+            builder.args(args.toArray(new String[0]));
+        }
+
+        Map<String, String> env = config.getEnv();
+        if (!env.isEmpty()) {
+            invokeBuilder(builder, env, "env", Map.class);
+            invokeBuilder(builder, env, "environment", Map.class);
+        }
+
+        String cwd = config.getCwd();
+        if (cwd != null && !cwd.isBlank()) {
+            boolean applied =
+                invokeBuilder(builder, cwd, "workingDirectory", String.class) ||
+                invokeBuilder(builder, Path.of(cwd), "workingDirectory", Path.class) ||
+                invokeBuilder(builder, new File(cwd), "workingDirectory", File.class) ||
+                invokeBuilder(builder, cwd, "cwd", String.class) ||
+                invokeBuilder(builder, Path.of(cwd), "cwd", Path.class);
+
+            if (!applied) {
+                Msg.warn(this, "STDIO working directory is configured but not supported by this MCP SDK version");
+            }
+        }
+
+        return new StdioClientTransport(
+            builder.build(),
+            new JacksonMcpJsonMapper(new ObjectMapper())
+        );
+    }
+
+    private boolean invokeBuilder(Object target, Object value, String methodName, Class<?> parameterType) {
+        try {
+            Method method = target.getClass().getMethod(methodName, parameterType);
+            method.invoke(target, value);
+            return true;
+        } catch (ReflectiveOperationException e) {
+            return false;
         }
     }
     

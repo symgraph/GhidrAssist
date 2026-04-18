@@ -36,6 +36,8 @@ GhidrAssist supports the Model Context Protocol (MCP), allowing LLMs to interact
 - Access the semantic graph
 - Use external MCP servers for specialized tooling
 
+GhidrAssist can connect to remote MCP servers over `SSE` or `Streamable HTTP`, and it can launch local MCP tools directly over `stdio`.
+
 See the [Query Workflow](workflows/query-workflow.md) for details on using MCP tools.
 
 ### ReAct Autonomous Agent

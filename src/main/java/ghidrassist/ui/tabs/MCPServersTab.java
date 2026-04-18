@@ -78,7 +78,7 @@ public class MCPServersTab extends JPanel {
         JPanel infoPanel = new JPanel(new BorderLayout());
         JTextArea infoText = new JTextArea(
             "MCP (Model Context Protocol) servers provide additional tools and context to the LLM.\n" +
-            "Configure servers here to enable their tools in queries. Servers must be MCP-compliant."
+            "Configure remote HTTP/SSE servers or local stdio processes here. Servers must be MCP-compliant."
         );
         infoText.setEditable(false);
         infoText.setOpaque(false);
@@ -161,6 +161,24 @@ public class MCPServersTab extends JPanel {
         if (selectedRow < 0) return;
 
         MCPServerConfig server = tableModel.getServerAt(selectedRow);
+        if (server.isStdioTransport() && (server.getCommand() == null || server.getCommand().isBlank())) {
+            JOptionPane.showMessageDialog(
+                this,
+                "The selected stdio server has no command configured.",
+                "Connection Test Error",
+                JOptionPane.ERROR_MESSAGE
+            );
+            return;
+        }
+        if (server.isNetworkTransport() && (server.getUrl() == null || server.getUrl().isBlank())) {
+            JOptionPane.showMessageDialog(
+                this,
+                "The selected MCP server has no URL configured.",
+                "Connection Test Error",
+                JOptionPane.ERROR_MESSAGE
+            );
+            return;
+        }
         testButton.setText("Cancel");
 
         SwingWorker<Boolean, Void> worker = new SwingWorker<Boolean, Void>() {
@@ -232,7 +250,7 @@ public class MCPServersTab extends JPanel {
     }
     
     private static class MCPServersTableModel extends AbstractTableModel {
-        private static final String[] COLUMN_NAMES = {"Name", "URL", "Enabled", "Transport"};
+        private static final String[] COLUMN_NAMES = {"Name", "Target", "Enabled", "Transport"};
         private List<MCPServerConfig> servers;
         
         public MCPServersTableModel() {
@@ -269,7 +287,7 @@ public class MCPServersTab extends JPanel {
             MCPServerConfig server = servers.get(row);
             switch (column) {
                 case 0: return server.getName();
-                case 1: return server.getBaseUrl();
+                case 1: return server.getDisplayTarget();
                 case 2: return server.isEnabled();
                 case 3: return server.getTransport().getDisplayName();
                 default: return null;
@@ -284,13 +302,8 @@ public class MCPServersTab extends JPanel {
         @Override
         public void setValueAt(Object value, int row, int column) {
             if (column == 2 && value instanceof Boolean) {
-                MCPServerConfig server = servers.get(row);
-                MCPServerConfig updated = new MCPServerConfig(
-                    server.getName(),
-                    server.getBaseUrl(),
-                    server.getTransport(),
-                    (Boolean) value
-                );
+                MCPServerConfig updated = servers.get(row).copy();
+                updated.setEnabled((Boolean) value);
                 MCPServerRegistry.getInstance().updateServer(updated);
                 fireTableCellUpdated(row, column);
             }

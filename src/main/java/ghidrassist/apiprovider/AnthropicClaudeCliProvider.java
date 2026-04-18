@@ -250,24 +250,36 @@ public class AnthropicClaudeCliProvider extends APIProvider implements FunctionC
         JsonObject mcpServers = new JsonObject();
 
         for (MCPServerConfig server : enabledServers) {
-            String serverUrl = server.getUrl();
-            if (serverUrl == null || serverUrl.isEmpty()) {
-                continue;
-            }
-
             JsonObject serverConfig = new JsonObject();
             String transport = server.getTransport().name().toLowerCase();
-            // Map transport types to Claude CLI config types
-            String cliType;
-            if ("sse".equals(transport)) {
-                cliType = "sse";
-            } else if ("streamable_http".equals(transport)) {
-                cliType = "streamable-http";
+            if ("stdio".equals(transport)) {
+                String command = server.getCommand();
+                if (command == null || command.isBlank()) {
+                    continue;
+                }
+                serverConfig.addProperty("command", command);
+                JsonArray args = new JsonArray();
+                for (String arg : server.getArgs()) {
+                    args.add(arg);
+                }
+                JsonObject env = new JsonObject();
+                for (Map.Entry<String, String> entry : server.getEnv().entrySet()) {
+                    env.addProperty(entry.getKey(), entry.getValue());
+                }
+                serverConfig.add("args", args);
+                serverConfig.add("env", env);
+            } else if ("sse".equals(transport) || "streamable_http".equals(transport)) {
+                String serverUrl = server.getUrl();
+                if (serverUrl == null || serverUrl.isEmpty()) {
+                    continue;
+                }
+
+                String cliType = "sse".equals(transport) ? "sse" : "streamable-http";
+                serverConfig.addProperty("type", cliType);
+                serverConfig.addProperty("url", server.getBaseUrl());
             } else {
-                cliType = "sse"; // Default fallback
+                continue;
             }
-            serverConfig.addProperty("type", cliType);
-            serverConfig.addProperty("url", server.getBaseUrl());
 
             mcpServers.add(server.getName(), serverConfig);
         }

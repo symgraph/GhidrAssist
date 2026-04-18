@@ -1,6 +1,11 @@
 package ghidrassist.mcp2.server;
 
 import com.google.gson.Gson;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 /**
  * Configuration for an MCP server connection.
@@ -10,7 +15,8 @@ public class MCPServerConfig {
     
     public enum TransportType {
         SSE("Server-Sent Events"),
-        STREAMABLE_HTTP("Streamable HTTP");
+        STREAMABLE_HTTP("Streamable HTTP"),
+        STDIO("Stdio (CLI Process)");
 
         private final String displayName;
 
@@ -21,6 +27,26 @@ public class MCPServerConfig {
         public String getDisplayName() {
             return displayName;
         }
+
+        public static TransportType fromString(String value) {
+            if (value == null || value.isBlank()) {
+                return null;
+            }
+
+            String normalized = value.trim()
+                .toUpperCase(Locale.ROOT)
+                .replace('-', '_');
+
+            if ("HTTP".equals(normalized) || "STREAMABLEHTTP".equals(normalized)) {
+                normalized = "STREAMABLE_HTTP";
+            }
+
+            try {
+                return TransportType.valueOf(normalized);
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+        }
     }
     
     private String name;                    // Display name (e.g., "GhidraMCP Local")
@@ -30,6 +56,10 @@ public class MCPServerConfig {
     private int requestTimeout;            // Request timeout in seconds
     private boolean enabled;               // Whether this server is active
     private String description;            // Optional description
+    private String command;                // STDIO command
+    private List<String> args;             // STDIO arguments
+    private Map<String, String> env;       // STDIO environment variables
+    private String cwd;                    // STDIO working directory
     
     // Default constructor for JSON deserialization
     public MCPServerConfig() {
@@ -37,6 +67,8 @@ public class MCPServerConfig {
         this.connectionTimeout = 15;
         this.requestTimeout = 30;
         this.enabled = true;
+        this.args = new ArrayList<>();
+        this.env = new LinkedHashMap<>();
     }
     
     public MCPServerConfig(String name, String url) {
@@ -112,18 +144,69 @@ public class MCPServerConfig {
     public void setDescription(String description) {
         this.description = description;
     }
+
+    public String getCommand() {
+        return command;
+    }
+
+    public void setCommand(String command) {
+        this.command = command;
+    }
+
+    public List<String> getArgs() {
+        return args != null ? new ArrayList<>(args) : new ArrayList<>();
+    }
+
+    public void setArgs(List<String> args) {
+        this.args = args != null ? new ArrayList<>(args) : new ArrayList<>();
+    }
+
+    public Map<String, String> getEnv() {
+        return env != null ? new LinkedHashMap<>(env) : new LinkedHashMap<>();
+    }
+
+    public void setEnv(Map<String, String> env) {
+        this.env = env != null ? new LinkedHashMap<>(env) : new LinkedHashMap<>();
+    }
+
+    public String getCwd() {
+        return cwd;
+    }
+
+    public void setCwd(String cwd) {
+        this.cwd = cwd;
+    }
+
+    public boolean isStdioTransport() {
+        return transport == TransportType.STDIO;
+    }
+
+    public boolean isNetworkTransport() {
+        return transport == TransportType.SSE || transport == TransportType.STREAMABLE_HTTP;
+    }
     
     /**
      * Get the base URL for HTTP connections
      */
     public String getBaseUrl() {
-        if (url == null) return null;
+        if (!isNetworkTransport() || url == null || url.isBlank()) return null;
         
         // Ensure URL has protocol
         if (!url.startsWith("http://") && !url.startsWith("https://")) {
             return "http://" + url;
         }
         return url;
+    }
+
+    /**
+     * Get the user-visible target for tables/dialogs.
+     */
+    public String getDisplayTarget() {
+        if (isStdioTransport()) {
+            return command != null ? command : "";
+        }
+        String baseUrl = getBaseUrl();
+        return baseUrl != null ? baseUrl : "";
     }
     
     /**
@@ -158,10 +241,11 @@ public class MCPServerConfig {
      */
     public boolean isValid() {
         return name != null && !name.trim().isEmpty() &&
-               url != null && !url.trim().isEmpty() &&
                transport != null &&
                connectionTimeout > 0 &&
-               requestTimeout > 0;
+               requestTimeout > 0 &&
+               ((isNetworkTransport() && url != null && !url.trim().isEmpty()) ||
+                (isStdioTransport() && command != null && !command.trim().isEmpty()));
     }
     
     /**
@@ -173,6 +257,10 @@ public class MCPServerConfig {
         copy.setRequestTimeout(requestTimeout);
         copy.setEnabled(enabled);
         copy.setDescription(description);
+        copy.setCommand(command);
+        copy.setArgs(getArgs());
+        copy.setEnv(getEnv());
+        copy.setCwd(cwd);
         return copy;
     }
     

@@ -7,7 +7,9 @@ import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -221,8 +223,8 @@ public class MCPServerRegistry {
             if (loadedServers != null) {
                 // Validate and migrate loaded servers
                 servers = loadedServers.stream()
+                    .map(this::migrateServerConfig)
                     .filter(MCPServerConfig::isValid)
-                    .map(this::migrateServerConfig)  // Apply migration
                     .collect(Collectors.toList());
 
                 Msg.info(this, "Loaded " + servers.size() + " MCP server configurations");
@@ -266,25 +268,20 @@ public class MCPServerRegistry {
                 if (!element.isJsonObject()) continue;
                 com.google.gson.JsonObject obj = element.getAsJsonObject();
 
-                String name = obj.has("name") ? obj.get("name").getAsString() : null;
-                String url = obj.has("url") ? obj.get("url").getAsString() : null;
+                String name = getString(obj, "name");
+                if (name == null || name.isBlank()) continue;
 
-                if (name == null || url == null) continue;
-
-                MCPServerConfig config = new MCPServerConfig(name, url);
-
-                // Check transport type - migrate STDIO to SSE
-                if (obj.has("transport")) {
-                    String transportStr = obj.get("transport").getAsString();
-                    if ("STDIO".equals(transportStr)) {
-                        config.setTransport(MCPServerConfig.TransportType.SSE);
-                        Msg.info(this, "Migrated server '" + name + "' from STDIO to SSE transport");
-                    } else if ("STREAMABLE_HTTP".equals(transportStr)) {
-                        config.setTransport(MCPServerConfig.TransportType.STREAMABLE_HTTP);
-                    } else {
-                        config.setTransport(MCPServerConfig.TransportType.SSE);
-                    }
+                MCPServerConfig.TransportType transport = MCPServerConfig.TransportType.fromString(getString(obj, "transport"));
+                if (transport == null) {
+                    transport = MCPServerConfig.TransportType.SSE;
                 }
+
+                MCPServerConfig config = new MCPServerConfig(name, getString(obj, "url"));
+                config.setTransport(transport);
+                config.setCommand(getString(obj, "command"));
+                config.setArgs(parseStringList(obj.get("args")));
+                config.setEnv(parseStringMap(obj.get("env")));
+                config.setCwd(getString(obj, "cwd"));
 
                 if (obj.has("enabled")) {
                     config.setEnabled(obj.get("enabled").getAsBoolean());
@@ -317,6 +314,14 @@ public class MCPServerRegistry {
             needsMigration = true;
         }
 
+        // Normalize stdio collections for older saved configs
+        if (server.getArgs().isEmpty()) {
+            server.setArgs(server.getArgs());
+        }
+        if (server.getEnv().isEmpty()) {
+            server.setEnv(server.getEnv());
+        }
+
         // Update old timeout values to new optimized defaults
         if (server.getConnectionTimeout() >= 10) {  // Old default was 10 seconds
             server.setConnectionTimeout(5);  // New optimized default
@@ -335,6 +340,41 @@ public class MCPServerRegistry {
         }
 
         return server;
+    }
+
+    private String getString(com.google.gson.JsonObject obj, String key) {
+        if (!obj.has(key) || obj.get(key).isJsonNull()) {
+            return null;
+        }
+        return obj.get(key).getAsString();
+    }
+
+    private List<String> parseStringList(com.google.gson.JsonElement element) {
+        List<String> values = new ArrayList<>();
+        if (element == null || element.isJsonNull() || !element.isJsonArray()) {
+            return values;
+        }
+
+        for (com.google.gson.JsonElement item : element.getAsJsonArray()) {
+            if (!item.isJsonNull()) {
+                values.add(item.getAsString());
+            }
+        }
+        return values;
+    }
+
+    private Map<String, String> parseStringMap(com.google.gson.JsonElement element) {
+        Map<String, String> values = new LinkedHashMap<>();
+        if (element == null || element.isJsonNull() || !element.isJsonObject()) {
+            return values;
+        }
+
+        for (Map.Entry<String, com.google.gson.JsonElement> entry : element.getAsJsonObject().entrySet()) {
+            if (!entry.getValue().isJsonNull()) {
+                values.put(entry.getKey(), entry.getValue().getAsString());
+            }
+        }
+        return values;
     }
     
     /**

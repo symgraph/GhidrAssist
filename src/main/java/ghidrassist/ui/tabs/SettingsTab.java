@@ -1360,6 +1360,16 @@ public class SettingsTab extends JPanel {
         }
 
         MCPServerConfig server = mcpTableModel.getServerAt(selectedRow);
+        if (server.isStdioTransport() && (server.getCommand() == null || server.getCommand().isBlank())) {
+            mcpTestStatusLabel.setIcon(failureIcon);
+            mcpTestStatusLabel.setToolTipText("Connection failed: no stdio command configured");
+            return;
+        }
+        if (server.isNetworkTransport() && (server.getUrl() == null || server.getUrl().isBlank())) {
+            mcpTestStatusLabel.setIcon(failureIcon);
+            mcpTestStatusLabel.setToolTipText("Connection failed: no URL configured");
+            return;
+        }
 
         // Show testing state with Cancel button
         mcpTestButton.setText("Cancel");
@@ -1955,7 +1965,7 @@ public class SettingsTab extends JPanel {
 
     private static class MCPServersTableModel extends javax.swing.table.AbstractTableModel {
         private static final long serialVersionUID = 1L;
-        private static final String[] COLUMN_NAMES = {"Name", "URL", "Enabled", "Transport"};
+        private static final String[] COLUMN_NAMES = {"Name", "Target", "Enabled", "Transport"};
         private List<MCPServerConfig> servers;
 
         public MCPServersTableModel() {
@@ -1992,7 +2002,7 @@ public class SettingsTab extends JPanel {
             MCPServerConfig server = servers.get(row);
             switch (column) {
                 case 0: return server.getName();
-                case 1: return server.getBaseUrl();
+                case 1: return server.getDisplayTarget();
                 case 2: return server.isEnabled();
                 case 3: return server.getTransport().getDisplayName();
                 default: return null;
@@ -2007,13 +2017,8 @@ public class SettingsTab extends JPanel {
         @Override
         public void setValueAt(Object value, int row, int column) {
             if (column == 2 && value instanceof Boolean) {
-                MCPServerConfig server = servers.get(row);
-                MCPServerConfig updated = new MCPServerConfig(
-                    server.getName(),
-                    server.getBaseUrl(),
-                    server.getTransport(),
-                    (Boolean) value
-                );
+                MCPServerConfig updated = servers.get(row).copy();
+                updated.setEnabled((Boolean) value);
                 MCPServerRegistry.getInstance().updateServer(updated);
                 fireTableCellUpdated(row, column);
             }

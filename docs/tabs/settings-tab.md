@@ -81,9 +81,9 @@ Configure Model Context Protocol (MCP) servers that provide tools.
 | Column | Description |
 |--------|-------------|
 | **Name** | Server name |
-| **URL** | Server endpoint |
+| **Target** | Remote URL for HTTP/SSE servers, or the command for stdio servers |
 | **Enabled** | Whether the server is active |
-| **Transport** | HTTP / SSE / Stdio |
+| **Transport** | Streamable HTTP / SSE / Stdio |
 
 ### MCP Management Buttons
 
@@ -92,6 +92,20 @@ Configure Model Context Protocol (MCP) servers that provide tools.
 - **Duplicate**: Duplicate the selected server
 - **Remove**: Delete selected server
 - **Test Connection**: Verify connectivity
+
+### Add/Edit MCP Server Dialog
+
+The MCP dialog changes based on transport:
+
+- **SSE / Streamable HTTP**: Enter the remote server URL.
+- **Stdio**: Enter the command, optional arguments, optional working directory, and optional environment JSON.
+
+For stdio servers:
+
+- **Command**: Executable to launch, such as `python`, `uvx`, or `npx`
+- **Arguments**: Shell-style arguments or a JSON array of strings
+- **Working Directory**: Optional process working directory
+- **Environment JSON**: Optional JSON object of string key/value pairs
 
 ### Recommended MCP Server
 
