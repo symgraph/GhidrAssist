@@ -573,22 +573,7 @@ public class OpenAIOAuthProvider extends APIProvider implements FunctionCallingP
                 .headers(headers)
                 .build();
             
-            try (Response response = client.newCall(request).execute()) {
-                if (response.code() == 401) {
-                    throw new AuthenticationException(name, "createChatCompletion", 401, 
-                        response.body() != null ? response.body().string() : null,
-                        "Authentication failed. Please re-authenticate.");
-                }
-                if (response.code() == 429) {
-                    throw new RateLimitException(name, "createChatCompletion", null, null);
-                }
-                if (!response.isSuccessful()) {
-                    String errorBody = response.body() != null ? response.body().string() : "";
-                    throw new APIProviderException(APIProviderException.ErrorCategory.SERVICE_ERROR,
-                        name, "createChatCompletion", 
-                        "API error " + response.code() + ": " + errorBody);
-                }
-                
+            try (Response response = executeWithRetry(request, "createChatCompletion")) {
                 // Collect streaming response (API requires stream=true)
                 JsonObject responseData = collectStreamingResponse(response);
                 ParsedResponse parsed = parseResponseContent(responseData);
@@ -797,19 +782,7 @@ public class OpenAIOAuthProvider extends APIProvider implements FunctionCallingP
                 .headers(headers)
                 .build();
             
-            try (Response response = client.newCall(request).execute()) {
-                if (response.code() == 401) {
-                    throw new AuthenticationException(name, "createChatCompletionWithFunctions", 401, 
-                        response.body() != null ? response.body().string() : null,
-                        "Authentication failed. Please re-authenticate.");
-                }
-                if (!response.isSuccessful()) {
-                    String errorBody = response.body() != null ? response.body().string() : "";
-                    throw new APIProviderException(APIProviderException.ErrorCategory.SERVICE_ERROR,
-                        name, "createChatCompletionWithFunctions", 
-                        "API error " + response.code() + ": " + errorBody);
-                }
-                
+            try (Response response = executeWithRetry(request, "createChatCompletionWithFunctions")) {
                 JsonObject responseData = collectStreamingResponse(response);
                 ParsedResponse parsed = parseResponseContent(responseData);
                 
@@ -850,19 +823,7 @@ public class OpenAIOAuthProvider extends APIProvider implements FunctionCallingP
                 .headers(headers)
                 .build();
             
-            try (Response response = client.newCall(request).execute()) {
-                if (response.code() == 401) {
-                    throw new AuthenticationException(name, "createChatCompletionWithFunctionsFullResponse", 401, 
-                        response.body() != null ? response.body().string() : null,
-                        "Authentication failed. Please re-authenticate.");
-                }
-                if (!response.isSuccessful()) {
-                    String errorBody = response.body() != null ? response.body().string() : "";
-                    throw new APIProviderException(APIProviderException.ErrorCategory.SERVICE_ERROR,
-                        name, "createChatCompletionWithFunctionsFullResponse", 
-                        "API error " + response.code() + ": " + errorBody);
-                }
-                
+            try (Response response = executeWithRetry(request, "createChatCompletionWithFunctionsFullResponse")) {
                 JsonObject responseData = collectStreamingResponse(response);
                 ParsedResponse parsed = parseResponseContent(responseData);
                 ghidra.util.Msg.info(this, "OpenAI OAuth parsed function response: finish_reason="
@@ -1009,19 +970,7 @@ public class OpenAIOAuthProvider extends APIProvider implements FunctionCallingP
                 .headers(headers)
                 .build();
 
-            try (Response response = client.newCall(request).execute()) {
-                if (response.code() == 401) {
-                    throw new AuthenticationException(name, "getAvailableModels", 401,
-                        response.body() != null ? response.body().string() : null,
-                        "Authentication failed. Please re-authenticate.");
-                }
-                if (!response.isSuccessful()) {
-                    String errorBody = response.body() != null ? response.body().string() : "";
-                    throw new APIProviderException(APIProviderException.ErrorCategory.SERVICE_ERROR,
-                        name, "getAvailableModels",
-                        "API error " + response.code() + ": " + errorBody);
-                }
-
+            try (Response response = executeWithRetry(request, "getAvailableModels")) {
                 String responseBody = response.body() != null ? response.body().string() : "{}";
                 JsonObject responseObj = parseModelDiscoveryPayload(responseBody);
                 JsonArray data = responseObj.has("models") && responseObj.get("models").isJsonArray()
