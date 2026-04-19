@@ -126,7 +126,7 @@ Fields:
 - **Show/Hide**: Toggle visibility
 - **Test Connection**: Verify credentials
 
-SymGraph accounts are required for push/pull operations. See the [SymGraph Workflow](../workflows/symgraph-workflow.md).
+SymGraph accounts are required for import and publish operations. See the [SymGraph Tab](symgraph-tab.md).
 
 ## System Prompt Section
 

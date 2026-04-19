@@ -80,10 +80,10 @@ If you want to contribute:
 2. Select **Graph**
 3. Click **Push to SymGraph**
 
-See [SymGraph Workflow](symgraph-workflow.md).
+See [SymGraph Tab](../tabs/symgraph-tab.md).
 
 ## Related Documentation
 
 - [Semantic Graph Tab Reference](../tabs/semantic-graph-tab.md)
 - [Query Workflow](query-workflow.md)
-- [SymGraph Workflow](symgraph-workflow.md)
+- [SymGraph Tab](../tabs/symgraph-tab.md)

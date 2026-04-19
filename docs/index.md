@@ -22,6 +22,7 @@ GhidrAssist is organized into seven tabs, each focused on a specific aspect of L
 | **[Actions](tabs/actions-tab.md)** | LLM-powered suggestions for renaming, retyping, and struct creation |
 | **[Semantic Graph](tabs/semantic-graph-tab.md)** | Build a knowledge graph of function relationships and security properties |
 | **[RAG](tabs/rag-tab.md)** | Manage external documentation for context-enhanced queries |
+| **[SymGraph](tabs/symgraph-tab.md)** | Compare against SymGraph, import shared analysis, and publish your own revisions |
 | **[Settings](tabs/settings-tab.md)** | Configure LLM providers, MCP servers, and plugin options |
 
 ## Key Features
@@ -133,4 +134,5 @@ Ready to start using GhidrAssist? See the [Getting Started Guide](getting-starte
 - [Actions Tab](tabs/actions-tab.md)
 - [Semantic Graph Tab](tabs/semantic-graph-tab.md)
 - [RAG Tab](tabs/rag-tab.md)
+- [SymGraph Tab](tabs/symgraph-tab.md)
 - [Settings Tab](tabs/settings-tab.md)
