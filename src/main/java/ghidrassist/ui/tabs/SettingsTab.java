@@ -216,10 +216,8 @@ public class SettingsTab extends JPanel {
         contentPanel.add(createLLMProvidersSection());
         contentPanel.add(Box.createVerticalStrut(10));
         contentPanel.add(createMCPServersSection());
-        if (GhidrAssistUI.isSymGraphEnabled()) {
-            contentPanel.add(Box.createVerticalStrut(10));
-            contentPanel.add(createSymGraphSection());
-        }
+        contentPanel.add(Box.createVerticalStrut(10));
+        contentPanel.add(createSymGraphSection());
         contentPanel.add(Box.createVerticalStrut(10));
         contentPanel.add(createSystemPromptSection());
         contentPanel.add(Box.createVerticalStrut(10));
