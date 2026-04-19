@@ -42,7 +42,7 @@ import java.util.concurrent.TimeoutException;
  */
 public class SettingsTab extends JPanel {
     private static final long serialVersionUID = 1L;
-    private static final String VERSION = "1.29.0";
+    private static final String VERSION = "2.0.0";
     private static final String[] REASONING_EFFORT_OPTIONS = {"None", "Low", "Medium", "High"};
 
     private final TabController controller;
