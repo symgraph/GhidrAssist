@@ -173,6 +173,24 @@ public abstract class APIProvider implements ChatProvider {
      * Handle network-related exceptions and convert to appropriate APIProviderException
      */
     protected APIProviderException handleNetworkError(Exception e, String operation) {
+        String message = e.getMessage();
+        String lowerMessage = message != null ? message.toLowerCase() : "";
+
+        if (e instanceof IOException && lowerMessage.contains("token refresh failed")) {
+            String apiErrorCode = null;
+            if (lowerMessage.contains("refresh_token_reused") ||
+                lowerMessage.contains("refresh token has already been used")) {
+                apiErrorCode = "refresh_token_reused";
+            }
+            return new AuthenticationException(
+                name,
+                operation,
+                lowerMessage.contains("401") ? 401 : -1,
+                apiErrorCode,
+                message != null ? message : "OAuth token refresh failed"
+            );
+        }
+
         if (e instanceof SocketTimeoutException) {
             return new NetworkException(name, operation, NetworkException.NetworkErrorType.TIMEOUT, e);
         } else if (e instanceof SSLException) {
@@ -181,13 +199,12 @@ public abstract class APIProvider implements ChatProvider {
             return new NetworkException(name, operation, NetworkException.NetworkErrorType.CONNECTION_FAILED, e);
         } else if (e instanceof UnknownHostException) {
             return new NetworkException(name, operation, NetworkException.NetworkErrorType.DNS_ERROR, e);
-        } else if (e instanceof IOException && e.getMessage() != null && 
-                   e.getMessage().toLowerCase().contains("connection")) {
+        } else if (e instanceof IOException && lowerMessage.contains("connection")) {
             return new NetworkException(name, operation, NetworkException.NetworkErrorType.CONNECTION_LOST, e);
         }
         
         // Default network error
-        return new NetworkException(name, operation, "Network error: " + e.getMessage());
+        return new NetworkException(name, operation, "Network error: " + message);
     }
     
     /**
