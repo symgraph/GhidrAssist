@@ -106,6 +106,16 @@ public class GeminiOAuthProvider extends APIProvider implements FunctionCallingP
     }
 
     @Override
+    public void prepareForConcurrentRequests() throws APIProviderException {
+        try {
+            tokenManager.getValidAccessToken();
+            persistCredentialsIfUpdated();
+        } catch (IOException e) {
+            throw handleNetworkError(e, "prepareForConcurrentRequests");
+        }
+    }
+
+    @Override
     protected OkHttpClient buildClient() {
         try {
             OkHttpClient.Builder builder = configureClientBuilder(new OkHttpClient.Builder())

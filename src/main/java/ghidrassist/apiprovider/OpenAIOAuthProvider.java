@@ -105,6 +105,16 @@ public class OpenAIOAuthProvider extends APIProvider implements FunctionCallingP
     public String getCredentialsJson() {
         return tokenManager.toJson();
     }
+
+    @Override
+    public void prepareForConcurrentRequests() throws APIProviderException {
+        try {
+            tokenManager.getValidAccessToken();
+            persistCredentialsIfUpdated();
+        } catch (IOException e) {
+            throw handleNetworkError(e, "prepareForConcurrentRequests");
+        }
+    }
     
     @Override
     protected OkHttpClient buildClient() {

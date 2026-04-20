@@ -103,6 +103,13 @@ public abstract class APIProvider implements ChatProvider {
 	public void setTimeout(Integer timeout2) { this.timeout = Duration.ofSeconds(timeout2 != null ? timeout2 : 90); }
 	public Integer getTimeout() { return Math.toIntExact(this.timeout.getSeconds()); }
 
+    /**
+     * Allows providers to prepare shared state before concurrent requests fan out.
+     */
+    public void prepareForConcurrentRequests() throws APIProviderException {
+        // Default no-op.
+    }
+
     public String createChatCompletionWithFunctions(List<ChatMessage> messages,
                                                     List<Map<String, Object>> functions,
                                                     ToolChoiceMode toolChoiceMode) throws APIProviderException {

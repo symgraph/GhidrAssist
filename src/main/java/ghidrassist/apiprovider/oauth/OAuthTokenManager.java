@@ -41,6 +41,7 @@ public class OAuthTokenManager {
     
     private final OkHttpClient httpClient;
     private final Gson gson;
+    private final Object refreshLock = new Object();
     
     // Token storage
     private String accessToken;
@@ -287,12 +288,17 @@ public class OAuthTokenManager {
         if (!isAuthenticated()) {
             throw new IllegalStateException("Not authenticated. Call authenticate() first.");
         }
-        
-        if (isTokenExpired()) {
-            refreshAccessToken();
+
+        if (!isTokenExpired()) {
+            return accessToken;
         }
-        
-        return accessToken;
+
+        synchronized (refreshLock) {
+            if (isTokenExpired()) {
+                refreshAccessTokenLocked();
+            }
+            return accessToken;
+        }
     }
     
     /**
@@ -301,6 +307,12 @@ public class OAuthTokenManager {
      * @throws IOException If refresh fails
      */
     public void refreshAccessToken() throws IOException {
+        synchronized (refreshLock) {
+            refreshAccessTokenLocked();
+        }
+    }
+
+    private void refreshAccessTokenLocked() throws IOException {
         if (refreshToken == null || refreshToken.isEmpty()) {
             throw new IllegalStateException("No refresh token available. Re-authentication required.");
         }

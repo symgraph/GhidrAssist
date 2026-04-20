@@ -129,6 +129,14 @@ public class SemanticExtractor {
         }
 
         // Process nodes with parallel workers
+        try {
+            provider.prepareForConcurrentRequests();
+        } catch (APIProviderException e) {
+            Msg.error(this, "Failed to prepare provider for concurrent semantic requests: " + e.getMessage(), e);
+            errors.incrementAndGet();
+            long elapsed = System.currentTimeMillis() - startTime;
+            return new ExtractionResult(summarized.get(), embeddingsGenerated.get(), errors.get(), elapsed);
+        }
         Msg.info(this, "Using " + PARALLEL_WORKERS + " parallel workers");
         ExecutorService executor = Executors.newFixedThreadPool(PARALLEL_WORKERS);
 
