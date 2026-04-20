@@ -184,17 +184,20 @@ public abstract class APIProvider implements ChatProvider {
         String lowerMessage = message != null ? message.toLowerCase() : "";
 
         if (e instanceof IOException && lowerMessage.contains("token refresh failed")) {
-            String apiErrorCode = null;
-            if (lowerMessage.contains("refresh_token_reused") ||
-                lowerMessage.contains("refresh token has already been used")) {
-                apiErrorCode = "refresh_token_reused";
+            String apiErrorCode = classifyOAuthRefreshFailure(lowerMessage);
+            String authMessage = message != null ? message : "OAuth token refresh failed";
+            if (requiresOAuthReauthentication(apiErrorCode) &&
+                !lowerMessage.contains("re-authentication required") &&
+                !lowerMessage.contains("re-authenticate") &&
+                !lowerMessage.contains("reauthenticate")) {
+                authMessage += " Re-authentication required.";
             }
             return new AuthenticationException(
                 name,
                 operation,
                 lowerMessage.contains("401") ? 401 : -1,
                 apiErrorCode,
-                message != null ? message : "OAuth token refresh failed"
+                authMessage
             );
         }
 
@@ -212,6 +215,37 @@ public abstract class APIProvider implements ChatProvider {
         
         // Default network error
         return new NetworkException(name, operation, "Network error: " + message);
+    }
+
+    private String classifyOAuthRefreshFailure(String lowerMessage) {
+        if (lowerMessage.contains("refresh_token_reused") ||
+            lowerMessage.contains("refresh token has already been used")) {
+            return "refresh_token_reused";
+        }
+        if (lowerMessage.contains("refresh_token_expired") ||
+            lowerMessage.contains("refresh token has expired") ||
+            lowerMessage.contains("expired refresh token")) {
+            return "refresh_token_expired";
+        }
+        if (lowerMessage.contains("refresh_token_revoked") ||
+            lowerMessage.contains("refresh token has been revoked") ||
+            lowerMessage.contains("refresh token revoked")) {
+            return "refresh_token_revoked";
+        }
+        if (lowerMessage.contains("refresh_token_invalid") ||
+            lowerMessage.contains("invalid refresh token") ||
+            lowerMessage.contains("refresh token is invalid") ||
+            lowerMessage.contains("invalid_grant")) {
+            return "refresh_token_invalid";
+        }
+        return null;
+    }
+
+    private boolean requiresOAuthReauthentication(String apiErrorCode) {
+        return "refresh_token_reused".equals(apiErrorCode) ||
+            "refresh_token_expired".equals(apiErrorCode) ||
+            "refresh_token_revoked".equals(apiErrorCode) ||
+            "refresh_token_invalid".equals(apiErrorCode);
     }
     
     /**
