@@ -14,6 +14,7 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
 import ghidra.framework.preferences.Preferences;
+import ghidrassist.GAUtils;
 import ghidrassist.GhidrAssistPlugin;
 import ghidrassist.apiprovider.APIProvider;
 import ghidrassist.apiprovider.APIProviderConfig;
@@ -395,7 +396,7 @@ public class SettingsTab extends JPanel {
         // Analysis DB
         JPanel analysisRow = new JPanel(new FlowLayout(FlowLayout.LEFT));
         analysisRow.add(new JLabel("Analysis DB:"));
-        analysisDbPathField.setText(Preferences.getProperty("GhidrAssist.AnalysisDBPath", "ghidrassist_analysis.db"));
+        analysisDbPathField.setText(Preferences.getProperty("GhidrAssist.AnalysisDBPath", GAUtils.getDefaultDataPath("ghidrassist_analysis.db")));
         analysisRow.add(analysisDbPathField);
         JButton analysisDbBrowse = new JButton("Browse...");
         analysisDbBrowse.addActionListener(e -> browseFile(analysisDbPathField, "Select Analysis Database", false));
@@ -404,7 +405,7 @@ public class SettingsTab extends JPanel {
         // RLHF DB
         JPanel rlhfRow = new JPanel(new FlowLayout(FlowLayout.LEFT));
         rlhfRow.add(new JLabel("RLHF DB:"));
-        rlhfDbPathField.setText(Preferences.getProperty("GhidrAssist.RLHFDatabasePath", "ghidrassist_rlhf.db"));
+        rlhfDbPathField.setText(Preferences.getProperty("GhidrAssist.RLHFDatabasePath", GAUtils.getDefaultDataPath("ghidrassist_rlhf.db")));
         rlhfRow.add(rlhfDbPathField);
         JButton rlhfDbBrowse = new JButton("Browse...");
         rlhfDbBrowse.addActionListener(e -> browseFile(rlhfDbPathField, "Select RLHF Database", false));

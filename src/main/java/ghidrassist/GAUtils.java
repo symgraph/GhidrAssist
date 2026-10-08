@@ -2,6 +2,8 @@ package ghidrassist;
 
 import java.io.File;
 
+import ghidra.framework.Application;
+
 public class GAUtils {
 	public enum OperatingSystem {
 	    WINDOWS, MAC, LINUX, UNKNOWN;
@@ -20,28 +22,24 @@ public class GAUtils {
 	    }
 	}
 	
+	/**
+	 * Directory for GhidrAssist's own files (Lucene index, databases). It lives in
+	 * Ghidra's user settings directory, so portable Ghidra installs keep everything
+	 * in one place and nothing is written to the home directory.
+	 */
+	public static File getDataDirectory() {
+	    File dir = new File(Application.getUserSettingsDirectory(), "GhidrAssist");
+	    dir.mkdirs();
+	    return dir;
+	}
+
+	/** Default location of a GhidrAssist data file when no preference overrides it. */
+	public static String getDefaultDataPath(String fileName) {
+	    return new File(getDataDirectory(), fileName).getPath();
+	}
+
 	public static String getDefaultLucenePath(OperatingSystem os) {
-	    String basePath;
-	    switch (os) {
-	        case WINDOWS:
-	            basePath = System.getenv("LOCALAPPDATA");
-	            if (basePath == null) {
-	                throw new RuntimeException("Unable to access LOCALAPPDATA environment variable.");
-	            }
-	            break;
-
-	        case MAC:
-	            basePath = System.getProperty("user.home") + "/Library/Application Support";
-	            break;
-
-	        case LINUX:
-	            basePath = System.getProperty("user.home") + "/.config";
-	            break;
-
-	        default:
-	            throw new UnsupportedOperationException("Unsupported operating system: " + os);
-	    }
-	    return basePath + File.separator + "GhidrAssist" + File.separator + "LuceneIndex";
+	    return new File(getDataDirectory(), "LuceneIndex").getPath();
 	}
 
 }

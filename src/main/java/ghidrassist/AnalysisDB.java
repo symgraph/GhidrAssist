@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class AnalysisDB {
     private static final String DB_PATH_PROPERTY = "GhidrAssist.AnalysisDBPath";
-    private static final String DEFAULT_DB_PATH = "ghidrassist_analysis.db";
+    private static final String DEFAULT_DB_PATH = GAUtils.getDefaultDataPath("ghidrassist_analysis.db");
     private Connection connection;
     private String databasePath;
 
